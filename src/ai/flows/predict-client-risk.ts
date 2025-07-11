@@ -28,7 +28,6 @@ const PredictClientRiskOutputSchema = z.object({
   riskStatus: z
     .enum(['dropout', 'committed'])
     .describe('The predicted risk status of the client (dropout or committed).'),
-  insight: z.string().describe('A personalized motivational message or analysis.'),
 });
 export type PredictClientRiskOutput = z.infer<typeof PredictClientRiskOutputSchema>;
 
@@ -40,14 +39,14 @@ const prompt = ai.definePrompt({
   name: 'predictClientRiskPrompt',
   input: {schema: PredictClientRiskInputSchema},
   output: {schema: PredictClientRiskOutputSchema},
-  prompt: `Based on the client's activity and compliance data, predict their risk status (dropout or committed) and provide a personalized insight.
+  prompt: `Based on the client's activity and compliance data, predict their risk status (dropout or committed).
 
 Client ID: {{{clientId}}}
 Workouts Completed: {{{workoutsCompleted}}}
 Exercise Compliance: {{{exerciseCompliance}}}%
 Nutrition Compliance: {{{nutritionCompliance}}}%
 
-Predict the risk status and provide a brief, personalized motivational message or analysis.`,
+Predict the risk status as either 'dropout' or 'committed'.`,
 });
 
 const predictClientRiskFlow = ai.defineFlow(

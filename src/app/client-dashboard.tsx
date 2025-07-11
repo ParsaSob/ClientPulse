@@ -4,12 +4,14 @@ import { useState } from "react";
 import { RefreshCw, Zap } from "lucide-react";
 import { type Client, type ClientRiskInsight, type Credentials } from "@/lib/types";
 import { predictClientRisk } from "@/ai/flows/predict-client-risk";
+import { generatePersonalizedInsights } from "@/ai/flows/generate-personalized-insights";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ConfigPanel } from "@/components/features/config-panel";
 import { ClientDataTable } from "@/components/features/client-data-table";
 import { RiskInsightTable } from "@/components/features/risk-insight-table";
 import { fetchClients } from "@/services/client-data-service";
+import { cn } from "@/lib/utils";
 
 export default function ClientDashboard() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -48,26 +50,55 @@ export default function ClientDashboard() {
         return;
       }
       
-      const insightPromises = fetchedClients.map((client) =>
-        predictClientRisk({
-          clientId: client.clientId,
+      const riskPredictions = await Promise.allSettled(
+        fetchedClients.map((client) =>
+          predictClientRisk({
+            clientId: client.clientId,
+            workoutsCompleted: client.workoutsCompleted,
+            exerciseCompliance: client.exerciseCompliance.thisWeek,
+            nutritionCompliance: client.nutritionCompliance.percentage,
+          })
+        )
+      );
+
+      const successfulPredictions = riskPredictions
+        .filter((result): result is PromiseFulfilledResult<{ clientId: string; riskStatus: 'dropout' | 'committed' }> => {
+          if (result.status === 'rejected') {
+            console.error("AI risk prediction failed for a client:", result.reason);
+            return false;
+          }
+          return true;
+        })
+        .map((result) => result.value);
+        
+      const insightPromises = successfulPredictions.map(async (prediction) => {
+        const client = fetchedClients.find(c => c.clientId === prediction.clientId);
+        if (!client) return null;
+
+        const insightResult = await generatePersonalizedInsights({
+          ...prediction,
           workoutsCompleted: client.workoutsCompleted,
           exerciseCompliance: client.exerciseCompliance.thisWeek,
           nutritionCompliance: client.nutritionCompliance.percentage,
-        })
-      );
+        });
+
+        return {
+            ...prediction,
+            insight: insightResult.insight,
+        };
+      });
 
       const settledInsights = await Promise.allSettled(insightPromises);
 
       const newInsights: ClientRiskInsight[] = settledInsights
-        .filter((result): result is PromiseFulfilledResult<ClientRiskInsight> => {
+        .filter((result): result is PromiseFulfilledResult<ClientRiskInsight | null> => {
             if (result.status === 'rejected') {
                 console.error("AI insight generation failed for a client:", result.reason);
                 return false;
             }
-            return true;
+            return result.value !== null;
         })
-        .map((result) => result.value);
+        .map((result) => result.value!);
 
       setInsights(newInsights);
       toast({
@@ -114,8 +145,4 @@ export default function ClientDashboard() {
       </div>
     </div>
   );
-}
-
-function cn(...inputs: (string | boolean | undefined)[]) {
-    return inputs.filter(Boolean).join(' ')
 }
