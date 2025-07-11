@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,7 @@ export default function ClientDashboard() {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [insights, setInsights] = useState<ClientRiskInsight[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const { toast } = useToast();
 
   const credentialsForm = useForm<z.infer<typeof credentialsSchema>>({
@@ -40,47 +41,15 @@ export default function ClientDashboard() {
     },
   });
 
-
-  const handleRefresh = async (creds: Credentials) => {
-    if (!creds.apiKey && (!creds.domain || !creds.email || !creds.password)) {
-      toast({
-        title: "Configuration Needed",
-        description: "Please provide your credentials or API key before refreshing.",
-        variant: "destructive",
-      });
+  const generateInsightsForClients = async (clientsToProcess: Client[]) => {
+    if (clientsToProcess.length === 0) {
+      setInsights([]);
       return;
     }
-    
-    setIsLoading(true);
-    setClients([]);
-    setInsights(null); 
-    const { dismiss } = toast({
-      title: "Refreshing Data...",
-      description: "Fetching client data. This may take a moment.",
-    });
 
     try {
-      const fetchedClients = await fetchClients(creds);
-      dismiss(); // Dismiss the "fetching" toast
-      setClients(fetchedClients);
-      
-      if (fetchedClients.length === 0) {
-        toast({
-          title: "No Clients Found",
-          description: "Could not fetch client data. Please check your credentials and try again.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      const { dismiss: dismissAIToast } = toast({
-        title: "Generating AI Insights...",
-        description: "This may take a few minutes for a large number of clients.",
-      });
-
       const riskPredictions = await Promise.allSettled(
-        fetchedClients.map((client) =>
+        clientsToProcess.map((client) =>
           predictClientRisk({
             clientId: client.clientId,
             workoutsCompleted: client.workoutsCompleted,
@@ -101,7 +70,7 @@ export default function ClientDashboard() {
         .map((result) => result.value);
         
       const insightPromises = successfulPredictions.map(async (prediction) => {
-        const client = fetchedClients.find(c => c.clientId === prediction.clientId);
+        const client = clientsToProcess.find(c => c.clientId === prediction.clientId);
         if (!client) return null;
 
         const insightResult = await generatePersonalizedInsights({
@@ -128,9 +97,72 @@ export default function ClientDashboard() {
             return result.value !== null;
         })
         .map((result) => result.value!);
-
-      dismissAIToast();
+      
       setInsights(newInsights);
+
+    } catch (error) {
+      console.error("Failed to generate AI insights:", error);
+      toast({
+        title: "AI Error",
+        description: "Could not generate AI insights.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  useEffect(() => {
+    const processInitialData = async () => {
+      setIsInitialLoading(true);
+      await generateInsightsForClients(initialClients);
+      setIsInitialLoading(false);
+    }
+    processInitialData();
+  }, [])
+
+
+  const handleRefresh = async (creds: Credentials) => {
+    if (!creds.apiKey && (!creds.domain || !creds.email || !creds.password)) {
+      toast({
+        title: "Configuration Needed",
+        description: "Please provide your credentials or API key before refreshing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    setClients([]);
+    setInsights(null); 
+    const { dismiss } = toast({
+      title: "Refreshing Data...",
+      description: "Fetching client data. This may take a moment.",
+    });
+
+    try {
+      const fetchedClients = await fetchClients(creds);
+      setClients(fetchedClients);
+      
+      if (fetchedClients.length === 0) {
+        dismiss(); // Dismiss the "fetching" toast
+        toast({
+          title: "No Clients Found",
+          description: "Could not fetch client data. Please check your credentials and try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      const { dismiss: dismissAIToast } = toast({
+        title: "Generating AI Insights...",
+        description: "This may take a few minutes for a large number of clients.",
+      });
+      
+      await generateInsightsForClients(fetchedClients);
+
+      dismiss();
+      dismissAIToast();
+
       toast({
         title: "Success!",
         description: "Client data and AI insights have been refreshed.",
@@ -181,7 +213,7 @@ export default function ClientDashboard() {
         </div>
         <div className="lg:col-span-2 space-y-8">
             <ClientDataTable clients={clients} isLoading={isLoading} />
-            <RiskInsightTable insights={insights} isLoading={isLoading} />
+            <RiskInsightTable insights={insights} isLoading={isLoading || isInitialLoading} />
         </div>
       </div>
     </div>
