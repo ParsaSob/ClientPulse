@@ -1,8 +1,6 @@
 export interface Client {
   clientId: string;
   age: number;
-  dob: string;
-  height: string;
   addedOn: string;
   lastSignedIn: string;
   workoutsCompleted: number;

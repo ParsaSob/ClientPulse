@@ -31,11 +31,9 @@ export function ClientDataTable({ clients, isLoading }: ClientDataTableProps) {
         <TableCell><Skeleton className="h-4 w-16 rounded" /></TableCell>
         <TableCell><Skeleton className="h-4 w-8 rounded" /></TableCell>
         <TableCell><Skeleton className="h-4 w-24 rounded" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-12 rounded" /></TableCell>
         <TableCell><Skeleton className="h-4 w-24 rounded" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-24 rounded" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-12 rounded" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-12 rounded" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-4 w-12 rounded" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-4 w-12 rounded" /></TableCell>
         <TableCell><Skeleton className="h-4 w-20 rounded" /></TableCell>
         <TableCell><Skeleton className="h-4 w-32 rounded" /></TableCell>
       </TableRow>
@@ -60,8 +58,6 @@ export function ClientDataTable({ clients, isLoading }: ClientDataTableProps) {
                 <TableRow>
                 <TableHead>Client ID</TableHead>
                 <TableHead>Age</TableHead>
-                <TableHead>DOB</TableHead>
-                <TableHead>Height</TableHead>
                 <TableHead>Added</TableHead>
                 <TableHead>Last Signed In</TableHead>
                 <TableHead className="text-right">Workouts</TableHead>
@@ -78,8 +74,6 @@ export function ClientDataTable({ clients, isLoading }: ClientDataTableProps) {
                     <TableRow key={client.clientId}>
                         <TableCell className="font-medium font-code">{client.clientId}</TableCell>
                         <TableCell>{client.age}</TableCell>
-                        <TableCell>{client.dob}</TableCell>
-                        <TableCell>{client.height}</TableCell>
                         <TableCell>{client.addedOn}</TableCell>
                         <TableCell>{client.lastSignedIn}</TableCell>
                         <TableCell className="text-right">{client.workoutsCompleted}</TableCell>
@@ -98,7 +92,7 @@ export function ClientDataTable({ clients, isLoading }: ClientDataTableProps) {
                     ))
                 ) : (
                      <TableRow>
-                        <TableCell colSpan={10} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                             No client data. Submit your credentials and click "Refresh Data".
                         </TableCell>
                     </TableRow>

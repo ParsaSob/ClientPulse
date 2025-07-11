@@ -4,8 +4,6 @@ export const initialClients: Client[] = [
   {
     clientId: 'C001',
     age: 28,
-    dob: '1996-05-15',
-    height: "5'11\"",
     addedOn: '2023-01-10',
     lastSignedIn: '2024-07-20',
     workoutsCompleted: 52,
@@ -23,8 +21,6 @@ export const initialClients: Client[] = [
   {
     clientId: 'C002',
     age: 45,
-    dob: '1979-11-22',
-    height: "6'2\"",
     addedOn: '2022-11-20',
     lastSignedIn: '2024-07-21',
     workoutsCompleted: 150,
@@ -42,8 +38,6 @@ export const initialClients: Client[] = [
   {
     clientId: 'C003',
     age: 22,
-    dob: '2002-03-01',
-    height: "5'6\"",
     addedOn: '2024-05-01',
     lastSignedIn: '2024-06-10',
     workoutsCompleted: 0,
@@ -61,8 +55,6 @@ export const initialClients: Client[] = [
   {
     clientId: 'C004',
     age: 34,
-    dob: '1990-08-30',
-    height: "5'8\"",
     addedOn: '2023-09-15',
     lastSignedIn: '2024-07-18',
     workoutsCompleted: 25,
