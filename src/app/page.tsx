@@ -1,3 +1,9 @@
+import ClientDashboard from "./client-dashboard";
+
 export default function Home() {
-  return <></>;
+  return (
+    <main>
+      <ClientDashboard />
+    </main>
+  );
 }
