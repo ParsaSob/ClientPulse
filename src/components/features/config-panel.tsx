@@ -1,7 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { type UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { KeyRound, AtSign, Lock, Globe, Dna } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,54 +22,31 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { type Credentials } from "@/lib/types";
 
-const credentialsSchema = z.object({
+export const credentialsSchema = z.object({
   domain: z.string().url({ message: "Please enter a valid URL." }),
   email: z.string().email({ message: "Please enter a valid email." }),
   password: z.string().min(1, { message: "Password cannot be empty." }),
 });
 
-const apiSchema = z.object({
+export const apiSchema = z.object({
   apiKey: z.string().min(1, { message: "API Key cannot be empty." }),
 });
 
 interface ConfigPanelProps {
-  onCredentialsSubmit: (credentials: Credentials) => void;
+  credentialsForm: UseFormReturn<z.infer<typeof credentialsSchema>>;
+  apiForm: UseFormReturn<z.infer<typeof apiSchema>>;
 }
 
-export function ConfigPanel({ onCredentialsSubmit }: ConfigPanelProps) {
+export function ConfigPanel({ credentialsForm, apiForm }: ConfigPanelProps) {
   const { toast } = useToast();
 
-  const credentialsForm = useForm<z.infer<typeof credentialsSchema>>({
-    resolver: zodResolver(credentialsSchema),
-    defaultValues: {
-      domain: "",
-      email: "",
-      password: "",
-    },
-  });
-
-  const apiForm = useForm<z.infer<typeof apiSchema>>({
-    resolver: zodResolver(apiSchema),
-    defaultValues: {
-      apiKey: "",
-    },
-  });
-
-  function handleCredentialsSubmit(values: z.infer<typeof credentialsSchema>) {
-    onCredentialsSubmit(values);
+  // These functions are now just for showing the toast.
+  // The actual data submission is handled by the "Refresh Data" button.
+  function onValidSubmit() {
     toast({
-      title: "Credentials Saved",
-      description: "You can now refresh the client data.",
-    });
-  }
-
-  function handleApiSubmit(values: z.infer<typeof apiSchema>) {
-    onCredentialsSubmit(values);
-    toast({
-      title: "API Key Saved",
-      description: "You can now refresh the client data.",
+      title: "Configuration Set",
+      description: "Click 'Refresh Data' to fetch client information.",
     });
   }
 
@@ -93,7 +69,7 @@ export function ConfigPanel({ onCredentialsSubmit }: ConfigPanelProps) {
           </TabsList>
           <TabsContent value="credentials">
             <Form {...credentialsForm}>
-              <form onSubmit={credentialsForm.handleSubmit(handleCredentialsSubmit)} className="space-y-4 pt-4">
+              <form onSubmit={credentialsForm.handleSubmit(onValidSubmit)} className="space-y-4 pt-4">
                 <FormField
                   control={credentialsForm.control}
                   name="domain"
@@ -142,15 +118,15 @@ export function ConfigPanel({ onCredentialsSubmit }: ConfigPanelProps) {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={credentialsForm.formState.isSubmitting}>
-                    {credentialsForm.formState.isSubmitting ? "Saving..." : "Save Credentials"}
+                <Button type="submit" className="w-full">
+                    Set Credentials
                 </Button>
               </form>
             </Form>
           </TabsContent>
           <TabsContent value="api">
              <Form {...apiForm}>
-              <form onSubmit={apiForm.handleSubmit(handleApiSubmit)} className="space-y-4 pt-4">
+              <form onSubmit={apiForm.handleSubmit(onValidSubmit)} className="space-y-4 pt-4">
                 <FormField
                   control={apiForm.control}
                   name="apiKey"
@@ -167,8 +143,8 @@ export function ConfigPanel({ onCredentialsSubmit }: ConfigPanelProps) {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={apiForm.formState.isSubmitting}>
-                    {apiForm.formState.isSubmitting ? "Saving..." : "Save API Key"}
+                <Button type="submit" className="w-full">
+                    Set API Key
                 </Button>
               </form>
             </Form>

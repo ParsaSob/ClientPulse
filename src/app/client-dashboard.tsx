@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { RefreshCw, Zap } from "lucide-react";
 import { type Client, type ClientRiskInsight, type Credentials } from "@/lib/types";
 import { predictClientRisk } from "@/ai/flows/predict-client-risk";
 import { generatePersonalizedInsights } from "@/ai/flows/generate-personalized-insights";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ConfigPanel } from "@/components/features/config-panel";
+import { ConfigPanel, credentialsSchema, apiSchema } from "@/components/features/config-panel";
 import { ClientDataTable } from "@/components/features/client-data-table";
 import { RiskInsightTable } from "@/components/features/risk-insight-table";
 import { fetchClients } from "@/services/client-data-service";
@@ -17,11 +20,27 @@ export default function ClientDashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [insights, setInsights] = useState<ClientRiskInsight[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [credentials, setCredentials] = useState<Credentials | null>(null);
   const { toast } = useToast();
 
-  const handleRefresh = async () => {
-    if (!credentials) {
+  const credentialsForm = useForm<z.infer<typeof credentialsSchema>>({
+    resolver: zodResolver(credentialsSchema),
+    defaultValues: {
+      domain: "",
+      email: "",
+      password: "",
+    },
+  });
+
+  const apiForm = useForm<z.infer<typeof apiSchema>>({
+    resolver: zodResolver(apiSchema),
+    defaultValues: {
+      apiKey: "",
+    },
+  });
+
+
+  const handleRefresh = async (creds: Credentials) => {
+    if (!creds.apiKey && (!creds.domain || !creds.email || !creds.password)) {
       toast({
         title: "Configuration Needed",
         description: "Please provide your credentials or API key before refreshing.",
@@ -29,7 +48,7 @@ export default function ClientDashboard() {
       });
       return;
     }
-
+    
     setIsLoading(true);
     setClients([]);
     setInsights(null); 
@@ -39,10 +58,10 @@ export default function ClientDashboard() {
     });
 
     try {
-      const fetchedClients = await fetchClients(credentials);
+      const fetchedClients = await fetchClients(creds);
       dismiss(); // Dismiss the "fetching" toast
       setClients(fetchedClients);
-
+      
       if (fetchedClients.length === 0) {
         toast({
           title: "No Clients Found",
@@ -50,7 +69,7 @@ export default function ClientDashboard() {
           variant: "destructive",
         });
         setIsLoading(false);
-        return; // <-- Important: Stop execution here if no clients are found
+        return;
       }
       
       const { dismiss: dismissAIToast } = toast({
@@ -129,6 +148,16 @@ export default function ClientDashboard() {
     }
   };
 
+  const onRefreshClick = () => {
+    // Combine values from both forms. The fetch logic will decide which to use.
+    const combinedCreds = {
+      ...credentialsForm.getValues(),
+      ...apiForm.getValues(),
+    };
+    handleRefresh(combinedCreds);
+  };
+
+
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
       <header className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -138,7 +167,7 @@ export default function ClientDashboard() {
                 ClientPulse
             </h1>
         </div>
-        <Button onClick={handleRefresh} disabled={isLoading}>
+        <Button onClick={onRefreshClick} disabled={isLoading}>
           <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
           {isLoading ? "Refreshing..." : "Refresh Data"}
         </Button>
@@ -146,7 +175,7 @@ export default function ClientDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1">
-            <ConfigPanel onCredentialsSubmit={setCredentials} />
+            <ConfigPanel credentialsForm={credentialsForm} apiForm={apiForm} />
         </div>
         <div className="lg:col-span-2 space-y-8">
             <ClientDataTable clients={clients} isLoading={isLoading} />
