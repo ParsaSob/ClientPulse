@@ -31,6 +31,7 @@ export default function ClientDashboard() {
     }
 
     setIsLoading(true);
+    setClients([]);
     setInsights(null); 
     const { dismiss } = toast({
       title: "Refreshing Data...",
@@ -49,7 +50,7 @@ export default function ClientDashboard() {
           variant: "destructive",
         });
         setIsLoading(false);
-        return;
+        return; // <-- Important: Stop execution here if no clients are found
       }
       
       const { dismiss: dismissAIToast } = toast({
