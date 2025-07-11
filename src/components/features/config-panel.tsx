@@ -23,18 +23,23 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { type Credentials } from "@/lib/types";
 
 const credentialsSchema = z.object({
   domain: z.string().url({ message: "Please enter a valid URL." }),
   email: z.string().email({ message: "Please enter a valid email." }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  password: z.string().min(1, { message: "Password cannot be empty." }),
 });
 
 const apiSchema = z.object({
   apiKey: z.string().min(1, { message: "API Key cannot be empty." }),
 });
 
-export function ConfigPanel() {
+interface ConfigPanelProps {
+  onCredentialsSubmit: (credentials: Credentials) => void;
+}
+
+export function ConfigPanel({ onCredentialsSubmit }: ConfigPanelProps) {
   const { toast } = useToast();
 
   const credentialsForm = useForm<z.infer<typeof credentialsSchema>>({
@@ -53,19 +58,19 @@ export function ConfigPanel() {
     },
   });
 
-  function onCredentialsSubmit(values: z.infer<typeof credentialsSchema>) {
-    console.log("Credentials submitted:", values);
+  function handleCredentialsSubmit(values: z.infer<typeof credentialsSchema>) {
+    onCredentialsSubmit(values);
     toast({
-      title: "Credentials Submitted",
-      description: "We've received your credentials.",
+      title: "Credentials Saved",
+      description: "You can now refresh the client data.",
     });
   }
 
-  function onApiSubmit(values: z.infer<typeof apiSchema>) {
-    console.log("API Key submitted:", values);
+  function handleApiSubmit(values: z.infer<typeof apiSchema>) {
+    onCredentialsSubmit(values);
     toast({
-      title: "API Key Submitted",
-      description: "We've received your API key.",
+      title: "API Key Saved",
+      description: "You can now refresh the client data.",
     });
   }
 
@@ -88,7 +93,7 @@ export function ConfigPanel() {
           </TabsList>
           <TabsContent value="credentials">
             <Form {...credentialsForm}>
-              <form onSubmit={credentialsForm.handleSubmit(onCredentialsSubmit)} className="space-y-4 pt-4">
+              <form onSubmit={credentialsForm.handleSubmit(handleCredentialsSubmit)} className="space-y-4 pt-4">
                 <FormField
                   control={credentialsForm.control}
                   name="domain"
@@ -138,14 +143,14 @@ export function ConfigPanel() {
                   )}
                 />
                 <Button type="submit" className="w-full" disabled={credentialsForm.formState.isSubmitting}>
-                    {credentialsForm.formState.isSubmitting ? "Submitting..." : "Submit Credentials"}
+                    {credentialsForm.formState.isSubmitting ? "Saving..." : "Save Credentials"}
                 </Button>
               </form>
             </Form>
           </TabsContent>
           <TabsContent value="api">
              <Form {...apiForm}>
-              <form onSubmit={apiForm.handleSubmit(onApiSubmit)} className="space-y-4 pt-4">
+              <form onSubmit={apiForm.handleSubmit(handleApiSubmit)} className="space-y-4 pt-4">
                 <FormField
                   control={apiForm.control}
                   name="apiKey"
@@ -163,7 +168,7 @@ export function ConfigPanel() {
                   )}
                 />
                 <Button type="submit" className="w-full" disabled={apiForm.formState.isSubmitting}>
-                    {apiForm.formState.isSubmitting ? "Submitting..." : "Submit API Key"}
+                    {apiForm.formState.isSubmitting ? "Saving..." : "Save API Key"}
                 </Button>
               </form>
             </Form>

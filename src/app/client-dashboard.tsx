@@ -2,30 +2,53 @@
 
 import { useState } from "react";
 import { RefreshCw, Zap } from "lucide-react";
-import { initialClients } from "@/lib/mock-data";
-import { type Client, type ClientRiskInsight } from "@/lib/types";
+import { type Client, type ClientRiskInsight, type Credentials } from "@/lib/types";
 import { predictClientRisk } from "@/ai/flows/predict-client-risk";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ConfigPanel } from "@/components/features/config-panel";
 import { ClientDataTable } from "@/components/features/client-data-table";
 import { RiskInsightTable } from "@/components/features/risk-insight-table";
+import { fetchClients } from "@/services/client-data-service";
 
 export default function ClientDashboard() {
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const [clients, setClients] = useState<Client[]>([]);
   const [insights, setInsights] = useState<ClientRiskInsight[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [credentials, setCredentials] = useState<Credentials | null>(null);
   const { toast } = useToast();
 
   const handleRefresh = async () => {
+    if (!credentials) {
+      toast({
+        title: "Configuration Needed",
+        description: "Please provide your credentials or API key before refreshing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
+    setInsights(null); 
     toast({
       title: "Refreshing Data...",
       description: "Fetching client data and generating AI insights. This may take a few minutes.",
     });
 
     try {
-      const insightPromises = clients.map((client) =>
+      const fetchedClients = await fetchClients(credentials);
+      setClients(fetchedClients);
+
+      if (fetchedClients.length === 0) {
+        toast({
+          title: "No Clients Found",
+          description: "Could not fetch client data. Please check your credentials and try again.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      const insightPromises = fetchedClients.map((client) =>
         predictClientRisk({
           clientId: client.clientId,
           workoutsCompleted: client.workoutsCompleted,
@@ -57,7 +80,7 @@ export default function ClientDashboard() {
       console.error("Failed to refresh data:", error);
       toast({
         title: "Error",
-        description: "Could not refresh client data. Please try again later.",
+        description: "Could not refresh client data. Please check your credentials and try again later.",
         variant: "destructive",
       });
     } finally {
@@ -82,10 +105,10 @@ export default function ClientDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1">
-            <ConfigPanel />
+            <ConfigPanel onCredentialsSubmit={setCredentials} />
         </div>
         <div className="lg:col-span-2 space-y-8">
-            <ClientDataTable clients={clients} />
+            <ClientDataTable clients={clients} isLoading={isLoading} />
             <RiskInsightTable insights={insights} isLoading={isLoading} />
         </div>
       </div>

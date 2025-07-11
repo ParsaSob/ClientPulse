@@ -23,3 +23,10 @@ export interface ClientRiskInsight {
   riskStatus: 'dropout' | 'committed';
   insight: string;
 }
+
+export interface Credentials {
+    domain?: string;
+    email?: string;
+    password?: string;
+    apiKey?: string;
+}
