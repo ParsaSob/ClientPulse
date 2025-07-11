@@ -32,24 +32,31 @@ export default function ClientDashboard() {
 
     setIsLoading(true);
     setInsights(null); 
-    toast({
+    const { dismiss } = toast({
       title: "Refreshing Data...",
-      description: "Fetching client data and generating AI insights. This may take a few minutes.",
+      description: "Fetching client data. This may take a moment.",
     });
 
     try {
       const fetchedClients = await fetchClients(credentials);
+      dismiss(); // Dismiss the "fetching" toast
       setClients(fetchedClients);
 
       if (fetchedClients.length === 0) {
         toast({
           title: "No Clients Found",
           description: "Could not fetch client data. Please check your credentials and try again.",
+          variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
       
+      const { dismiss: dismissAIToast } = toast({
+        title: "Generating AI Insights...",
+        description: "This may take a few minutes for a large number of clients.",
+      });
+
       const riskPredictions = await Promise.allSettled(
         fetchedClients.map((client) =>
           predictClientRisk({
@@ -100,6 +107,7 @@ export default function ClientDashboard() {
         })
         .map((result) => result.value!);
 
+      dismissAIToast();
       setInsights(newInsights);
       toast({
         title: "Success!",
@@ -109,6 +117,7 @@ export default function ClientDashboard() {
 
     } catch (error) {
       console.error("Failed to refresh data:", error);
+      dismiss(); // Dismiss the "fetching" toast
       toast({
         title: "Error",
         description: "Could not refresh client data. Please check your credentials and try again later.",
