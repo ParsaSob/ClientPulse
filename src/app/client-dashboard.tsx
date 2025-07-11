@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -15,9 +16,10 @@ import { ClientDataTable } from "@/components/features/client-data-table";
 import { RiskInsightTable } from "@/components/features/risk-insight-table";
 import { fetchClients } from "@/services/client-data-service";
 import { cn } from "@/lib/utils";
+import { initialClients } from "@/lib/mock-data";
 
 export default function ClientDashboard() {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<Client[]>(initialClients);
   const [insights, setInsights] = useState<ClientRiskInsight[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
